@@ -28,16 +28,20 @@ function neighborOrder(q, X, metric) {
 /**
  * Majority vote of the k nearest, labels 0..C-1.
  *
- * A tie goes to the lowest label, as in scikit-learn, so k = n gives the
- * same estimate everywhere.
+ * A tie drops the farthest neighbor and votes again (k-1 NN), until the
+ * tie breaks; at worst this ends at the single nearest.
  *
  * Returns:
- *   {counts, winner}: counts (C,) votes per class, winner the estimate
+ *   {counts, winner, kUsed}: counts (C,) votes of the k nearest, winner
+ *     the estimate, kUsed the number of nearest whose vote decided it
  */
 function vote(order, y, k, C) {
   const counts = new Array(C).fill(0);
   for (let r = 0; r < k; r++) counts[y[order[r]]]++;
-  return { counts, winner: argmax(counts) };
+  const c = counts.slice();
+  let kUsed = k;
+  while (isTie(c)) c[y[order[--kUsed]]]--;
+  return { counts, winner: argmax(c), kUsed };
 }
 
 /** Index of the largest entry, the first one on a tie. */
@@ -45,6 +49,12 @@ function argmax(a) {
   let w = 0;
   for (let c = 1; c < a.length; c++) if (a[c] > a[w]) w = c;
   return w;
+}
+
+/** Whether the largest entry of a is shared. */
+function isTie(a) {
+  const top = Math.max(...a);
+  return a.indexOf(top) !== a.lastIndexOf(top);
 }
 
 /** Average label of the k nearest. */
@@ -57,7 +67,8 @@ function average(order, y, k) {
 /**
  * Error of the k-NN estimate on (evalX, evalY) for every k = 1..n.
  *
- * Each evaluation sample is sorted once; growing k adds one neighbor.
+ * Each evaluation sample is sorted once; growing k adds one neighbor. A
+ * tie at k keeps the estimate from k-1, which is the rule in vote().
  * Evaluating on the training set counts each sample among its own
  * neighbors (distance 0), as k-NN does when asked about a training sample.
  *
@@ -74,9 +85,11 @@ function errorByK(evalX, evalY, X, y, C, metric) {
     const { order } = neighborOrder(evalX[m], X, metric);
     if (C) {
       const counts = new Array(C).fill(0);
+      let w = 0;
       for (let k = 1; k <= n; k++) {
         counts[y[order[k - 1]]]++;
-        if (argmax(counts) !== evalY[m]) err[k]++;
+        if (!isTie(counts)) w = argmax(counts);
+        if (w !== evalY[m]) err[k]++;
       }
     } else {
       let s = 0;
@@ -114,19 +127,19 @@ function kthSmallest(a, k) {
 /**
  * Vote of the k nearest at the center of each cell of a G x G grid.
  *
- * Same rule as vote(), found by quickselect on the distances rather than a
- * full sort, since the grid holds many more points than the samples.
+ * Same rule as vote(). The k nearest are found by quickselect on the
+ * distances rather than a full sort, since the grid holds many more points
+ * than the samples; only a tied cell pays for the sort.
  *
  * Args:
  *   xdom, ydom (number[]): [lo, hi] extent of the grid; row 0 is ydom[1]
  *
  * Returns:
- *   {winner, share}: winner (G*G,) Uint8Array estimate per cell, row-major;
- *     share (G*G,) Float32Array fraction of the k votes the winner got
+ *   winner (Uint8Array): (G*G,) estimate per cell, row-major
  */
 function gridVotes(G, xdom, ydom, X, y, C, k, metric) {
   const n = X.length, d = new Float64Array(n), buf = new Float64Array(n);
-  const winner = new Uint8Array(G * G), share = new Float32Array(G * G);
+  const winner = new Uint8Array(G * G);
   const counts = new Array(C);
   const q = [0, 0];
   for (let gy = 0; gy < G; gy++) {
@@ -149,10 +162,13 @@ function gridVotes(G, xdom, ydom, X, y, C, k, metric) {
           left--;
         }
       }
-      const w = argmax(counts);
-      winner[gy * G + gx] = w;
-      share[gy * G + gx] = counts[w] / k;
+      if (isTie(counts)) {
+        const order = [...d.keys()].sort((a, b) => d[a] - d[b] || a - b);
+        winner[gy * G + gx] = vote(order, y, k, C).winner;
+      } else {
+        winner[gy * G + gx] = argmax(counts);
+      }
     }
   }
-  return { winner, share };
+  return winner;
 }

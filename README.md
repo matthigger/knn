@@ -6,10 +6,10 @@ Drag the query point to see its k neighbors and their vote; drag a training
 sample to move it and watch the estimate update. Two tabs:
 
 - **Classification.** Points in the plane, shaded by the k-NN estimate
-  everywhere (paler where the vote is close). Data sets: Blobs, Overlap,
+  everywhere. Data sets: Blobs, Overlap,
   Swiss roll (three interleaved spiral arms), Moons, Rings. Distance L2 or
-  L1 (the neighborhood draws as a circle or a diamond). Ties go to the
-  lowest label, as in scikit-learn.
+  L1 (the neighborhood draws as a circle or a diamond). A tie drops the
+  farthest neighbor and votes again (k-1 NN) until it breaks.
 - **Regression.** y against x, with the k-NN curve (average of the k
   nearest labels) over the true f(x). Data sets: Sine, Step, Linear, Chirp.
   The plot runs past [0, 1] to show k-NN cannot extrapolate.

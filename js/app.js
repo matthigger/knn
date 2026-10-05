@@ -5,7 +5,7 @@
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const COLORS = ["#2563eb", "#ea580c", "#9333ea"];
-// Region shade per class (RGB), mixed toward white as the vote gets closer.
+// Region shade per class (RGB).
 const PALE = [[191, 219, 254], [254, 215, 170], [233, 213, 255]];
 const CURVE = "#ea580c";
 // Testing samples: per class (classification) or in all (regression).
@@ -92,6 +92,12 @@ function fmtErr(v) {
     return p.toFixed(p < 10 && Math.round(10 * p) % 10 ? 1 : 0) + "%";
   }
   return v < 0.1 ? v.toFixed(3) : v.toFixed(2);
+}
+
+/** Chart tick label: the nice value exactly. */
+function fmtTick(v) {
+  if (state.mode !== "class") return fmtErr(v);
+  return `${+(100 * v).toFixed(1)}%`;
 }
 
 function dot(c) {
@@ -259,19 +265,13 @@ function updateLegend() {
 
 function drawRegions(G) {
   const C = numClasses(), s = cur(), p = V();
-  const { winner, share } = gridVotes(G, p.xdom, p.ydom, train.X, train.y,
-    C, s.k, s.metric);
+  const winner = gridVotes(G, p.xdom, p.ydom, train.X, train.y, C, s.k,
+    s.metric);
   canvas.width = canvas.height = G;
   const ctx = canvas.getContext("2d");
   const img = ctx.createImageData(G, G);
   for (let j = 0; j < G * G; j++) {
-    // A unanimous vote gets the full shade, the closest possible vote 25%.
-    const a = clamp((share[j] - 1 / C) / (1 - 1 / C), 0, 1);
-    const mix = 0.25 + 0.75 * a, pale = PALE[winner[j]];
-    for (let ch = 0; ch < 3; ch++) {
-      img.data[4 * j + ch] = 255 + (pale[ch] - 255) * mix;
-    }
-    img.data[4 * j + 3] = 255;
+    img.data.set([...PALE[winner[j]], 255], 4 * j);
   }
   ctx.putImageData(img, 0, 0);
   els.region.setAttribute("href", canvas.toDataURL());
@@ -312,12 +312,15 @@ function drawQuery() {
   const isClass = state.mode === "class";
   const ptY = i => (isClass ? train.X[i][1] : train.y[i]);
   let h = "";
-  const rings = nb.map(i => `<circle class="ring" cx="${sx(train.X[i][0])}"
-    cy="${sy(ptY(i))}" r="9.5"/>`).join("");
+  const ring = (i, cls) => `<circle class="${cls}" cx="${sx(train.X[i][0])}"
+    cy="${sy(ptY(i))}" r="9.5"/>`;
+  let rings = nb.map(i => ring(i, "ring")).join("");
 
   if (isClass) {
     const C = numClasses();
     qres = { ...vote(order, train.y, k, C), nb, r };
+    rings = nb.map((i, j) => ring(i, j < qres.kUsed ? "ring" : "ring dropped"))
+      .join("");
     const cx = sx(q[0]), cy = sy(q[1]), rp = sx(r) - sx(0);
     h += s.metric === "l1"
       ? `<polygon class="ball" points="${cx},${cy - rp} ${cx + rp},${cy}
@@ -373,7 +376,7 @@ function drawChart() {
   for (const v of [0, top / 2, top]) {
     h += `<line class="grid" x1="${P.x0}" x2="${P.x1}" y1="${ey(v)}"
       y2="${ey(v)}"/><text class="tick" x="${P.x0 - 5}" y="${ey(v) + 4}"
-      text-anchor="end">${fmtErr(v)}</text>`;
+      text-anchor="end">${fmtTick(v)}</text>`;
   }
   h += `<rect class="frame" x="${P.x0}" y="${P.y0}" width="${P.x1 - P.x0}"
       height="${P.y1 - P.y0}"/>
@@ -414,8 +417,6 @@ function updateReadout() {
   const isClass = state.mode === "class";
   let h = `<h3>Query</h3>`;
   if (isClass) {
-    const top = Math.max(...qres.counts);
-    const tie = qres.counts.filter(c => c === top).length > 1;
     h += `<div class="row"><span>Position <i>x</i></span><span class="val">
         (${fmt(s.q[0])}, ${fmt(s.q[1])})</span></div>
       <div class="row"><span>Votes of the ${k} nearest</span>
@@ -424,8 +425,11 @@ function updateReadout() {
       <div class="row"><span>Estimate <i>&ycirc;</i></span><span
         class="val">${dot(qres.winner)}<i>y</i> = ${qres.winner}</span>
       </div>`;
-    if (tie) {
-      h += `<p class="warn">Tied vote: the lowest tied label wins.</p>`;
+    if (qres.kUsed < k) {
+      h += `<p class="warn">Tied vote: the farthest
+        ${k - qres.kUsed === 1 ? "neighbor is" : `${k - qres.kUsed}
+        neighbors are`} dropped (dashed rings), and the
+        ${qres.kUsed} nearest decide.</p>`;
     }
   } else {
     const f = REG_SETS[s.set].f;

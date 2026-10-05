@@ -42,9 +42,9 @@
         </div>
         <p class="muted">Near means distance
           &#8214;<i>x</i> &minus; <i>x<sub>i</sub></i>&#8214;: L2 (straight
-          line) or L1 (sum of |differences|). A tie goes to the lowest label,
-          as in scikit-learn. Shading shows
-          <i>&ycirc;</i> everywhere; paler means a closer vote.</p>
+          line) or L1 (sum of |differences|). A tie drops the farthest neighbor
+          and votes again (<i>k</i>&minus;1 nearest) until it breaks.
+          Shading shows <i>&ycirc;</i> everywhere.</p>
       </div>
       <div data-show="reg">
         <div class="formula">
@@ -87,12 +87,14 @@
           At <i>k</i>&nbsp;=&nbsp;1 it claims an island; at
           <i>k</i>&nbsp;=&nbsp;7 its neighbors outvote it.</li>
         <li data-show="class">On <em>Overlap</em>, compare
-          <i>k</i>&nbsp;=&nbsp;2 with <i>k</i>&nbsp;=&nbsp;3. Why does the
-          blue region grow at <i>k</i>&nbsp;=&nbsp;2?
-          <details class="answer"><summary>Answer</summary>Wherever the two
-            neighbors disagree the vote ties 1 to 1, and the tie goes to
-            <i>y</i>&nbsp;=&nbsp;0. With two classes an odd <i>k</i> cannot
-            tie.</details>
+          <i>k</i>&nbsp;=&nbsp;1 with <i>k</i>&nbsp;=&nbsp;2. Why are they
+          the same?
+          <details class="answer"><summary>Answer</summary>When the two
+            neighbors agree, both rules give their label. When they
+            disagree the vote ties 1 to 1, so the farther one is dropped and
+            the nearest decides, as at <i>k</i>&nbsp;=&nbsp;1. With two
+            classes, an even <i>k</i> adds little over <i>k</i>&minus;1;
+            odd <i>k</i> cannot tie.</details>
         </li>
         <li data-show="class">Switch the distance to L1 and drag the query:
           the neighborhood becomes a diamond.</li>
