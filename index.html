@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KNN, visually</title>
+  <meta name="description" content="Drag samples and a query point to see
+    how k nearest neighbors classifies and regresses, and how k trades
+    training error for testing error.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%231c2230' stroke-width='2' stroke-dasharray='4 3'/%3E%3Ccircle cx='9' cy='11' r='4' fill='%232563eb'/%3E%3Ccircle cx='22' cy='9' r='4' fill='%232563eb'/%3E%3Ccircle cx='21' cy='23' r='4' fill='%23ea580c'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%231c2230'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>KNN, visually</h1>
+    <p class="sub">To estimate the label of a new sample, find the training
+      samples closest to it and copy what they say.</p>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-mode="class">Classification</button>
+      <button class="tab" role="tab" data-mode="reg">Regression</button>
+    </nav>
+  </header>
+
+  <section class="intro card">
+    <div>
+      <h2><i>k</i> nearest neighbors</h2>
+      <p class="goal"><b>Goal:</b> estimate the label <i>y</i> of a new
+        sample (the <b>query</b> <i>x</i>) from labeled training samples
+        (<i>x<sub>i</sub></i>, <i>y<sub>i</sub></i>).</p>
+      <p class="goal approach"><b>Approach:</b> find the <i>k</i> training
+        samples nearest to <i>x</i>, its <b>neighbors</b>
+        <i>N<sub>k</sub></i>(<i>x</i>).
+        <span data-show="class">The estimate is their majority vote.</span>
+        <span data-show="reg">The estimate is their average label.</span>
+        There is no training step: the samples themselves are the
+        model.</p>
+
+      <div data-show="class">
+        <div class="formula">
+          <i>&ycirc;</i>(<i>x</i>) = the most common <i>y<sub>i</sub></i>
+          among <i>i</i> &isin; <i>N<sub>k</sub></i>(<i>x</i>)
+        </div>
+        <p class="muted">Near means distance
+          &#8214;<i>x</i> &minus; <i>x<sub>i</sub></i>&#8214;: L2 (straight
+          line) or L1 (sum of |differences|). A tie goes to the lowest label,
+          as in scikit-learn. Shading shows
+          <i>&ycirc;</i> everywhere; paler means a closer vote.</p>
+      </div>
+      <div data-show="reg">
+        <div class="formula">
+          <i>&ycirc;</i>(<i>x</i>) =
+          <span class="frac"><span>1</span><span><i>k</i></span></span>
+          &sum;<sub><i>i</i> &isin; <i>N<sub>k</sub></i>(<i>x</i>)</sub>
+          <i>y<sub>i</sub></i>
+        </div>
+        <p class="muted">Near means |<i>x</i> &minus;
+          <i>x<sub>i</sub></i>|. The orange curve is <i>&ycirc;</i>(<i>x</i>)
+          at every <i>x</i>; the dashed curve is the true <i>f</i>(<i>x</i>)
+          the samples were drawn around.</p>
+      </div>
+    </div>
+
+    <div>
+      <h3>Try this</h3>
+      <ul class="try">
+        <li data-show="class">On <em>Overlap</em>, set
+          <i>k</i>&nbsp;=&nbsp;1. The regions break into islands around
+          single samples. Raise <i>k</i>: the boundary smooths out and the
+          testing error drops, while the training error rises.</li>
+        <li data-show="class">At <i>k</i>&nbsp;=&nbsp;1 the training error is
+          always 0%. Why? Is that a good sign?
+          <details class="answer"><summary>Answer</summary>Each training
+            sample is its own nearest neighbor (distance 0), so it votes for
+            its own label. A 0% training error says nothing about new
+            samples: compare the testing error.</details>
+        </li>
+        <li data-show="class">On <em>Swiss roll</em>, raise <i>k</i> until
+          the arms blur together. Why does a large <i>k</i> fail here but
+          not on <em>Blobs</em>?
+          <details class="answer"><summary>Answer</summary>Once the
+            neighborhood is wider than the gap between arms, it holds
+            samples from neighboring arms, and they outvote the right one.
+            The blobs are far apart, so a wide neighborhood still sees
+            mostly one class.</details>
+        </li>
+        <li data-show="class">Drag one sample deep into another class.
+          At <i>k</i>&nbsp;=&nbsp;1 it claims an island; at
+          <i>k</i>&nbsp;=&nbsp;7 its neighbors outvote it.</li>
+        <li data-show="class">On <em>Overlap</em>, compare
+          <i>k</i>&nbsp;=&nbsp;2 with <i>k</i>&nbsp;=&nbsp;3. Why does the
+          blue region grow at <i>k</i>&nbsp;=&nbsp;2?
+          <details class="answer"><summary>Answer</summary>Wherever the two
+            neighbors disagree the vote ties 1 to 1, and the tie goes to
+            <i>y</i>&nbsp;=&nbsp;0. With two classes an odd <i>k</i> cannot
+            tie.</details>
+        </li>
+        <li data-show="class">Switch the distance to L1 and drag the query:
+          the neighborhood becomes a diamond.</li>
+        <li data-show="reg">On <em>Sine</em>, set
+          <i>k</i>&nbsp;=&nbsp;1: the curve jumps to each sample's label
+          (training MSE 0). Raise <i>k</i> and it smooths; much larger and
+          it flattens out the hills. Which <i>k</i> has the lowest testing
+          MSE?</li>
+        <li data-show="reg">Set <i>k</i> to the number of samples. What is
+          <i>&ycirc;</i>(<i>x</i>)?
+          <details class="answer"><summary>Answer</summary>Every sample is a
+            neighbor of every query, so <i>&ycirc;</i>(<i>x</i>) is the mean
+            of all the labels: a flat line.</details>
+        </li>
+        <li data-show="reg">On <em>Linear</em>, look near <i>x</i> = 0 and
+          <i>x</i> = 1, and past them. Why does the curve bend away from the
+          line there?
+          <details class="answer"><summary>Answer</summary>At an edge every
+            neighbor lies on one side of the query, so the average is pulled
+            inward. Past the data the neighbors stop changing, so
+            <i>&ycirc;</i> is constant: k-NN cannot extrapolate.</details>
+        </li>
+        <li data-show="reg">On <em>Chirp</em>, find a <i>k</i> that fits
+          both ends. The slow left side wants a large <i>k</i>, the fast
+          right side a small one.</li>
+      </ul>
+    </div>
+  </section>
+
+  <main class="panel">
+    <div class="stage card">
+      <div class="stage-head" id="legend"></div>
+      <svg id="stage" aria-label="k nearest neighbors plot"></svg>
+      <p class="hint">Drag a training sample to move it. Click or drag
+        anywhere else to move the query.</p>
+    </div>
+
+    <aside class="side">
+      <div class="card controls">
+        <div class="field"><span>Data</span>
+          <div class="seg wrap" id="sets" role="radiogroup"></div></div>
+        <label class="slider"><span><i>k</i></span>
+          <input type="range" id="k" min="1" step="1">
+          <span id="kval" class="val"></span></label>
+        <label class="slider"><span>Samples</span>
+          <input type="range" id="n" step="1">
+          <span id="nval" class="val"></span></label>
+        <label class="slider"><span>Noise</span>
+          <input type="range" id="noise" min="0" max="1" step="0.05">
+          <span id="noiseval" class="val"></span></label>
+        <div class="field" data-show="class"><span>Distance</span>
+          <div class="seg" role="radiogroup">
+            <button data-metric="l2" role="radio">L2</button>
+            <button data-metric="l1" role="radio">L1</button>
+          </div></div>
+        <label class="check"><input type="checkbox" id="showtest"> Show
+          testing samples</label>
+        <div class="buttons">
+          <button id="resample" title="Draw new samples">&#8635;
+            Resample</button>
+          <button id="reset" title="Undo drags">Reset</button>
+        </div>
+      </div>
+
+      <div class="card readout" id="readout"></div>
+
+      <div class="card">
+        <h3 id="chart-title"></h3>
+        <svg id="chart" viewBox="0 0 340 176"
+          aria-label="error against k"></svg>
+        <p class="muted" id="chart-note"></p>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    Inspired by the
+    <a href="http://vision.stanford.edu/teaching/cs231n-demos/knn/">CS231n
+      k-NN demo</a>.
+    &middot;
+    <a href="https://github.com/matthigger/knn">Source on GitHub</a>
+    &middot;
+    <span id="build"></span>
+  </footer>
+
+  <script src="js/version.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/knn.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

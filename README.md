@@ -1,0 +1,59 @@
+# knn
+
+Interactive teaching demo of k nearest neighbors, in the style of the
+[CS231n k-NN demo](http://vision.stanford.edu/teaching/cs231n-demos/knn/).
+Drag the query point to see its k neighbors and their vote; drag a training
+sample to move it and watch the estimate update. Two tabs:
+
+- **Classification.** Points in the plane, shaded by the k-NN estimate
+  everywhere (paler where the vote is close). Data sets: Blobs, Overlap,
+  Swiss roll (three interleaved spiral arms), Moons, Rings. Distance L2 or
+  L1 (the neighborhood draws as a circle or a diamond). Ties go to the
+  lowest label, as in scikit-learn.
+- **Regression.** y against x, with the k-NN curve (average of the k
+  nearest labels) over the true f(x). Data sets: Sine, Step, Linear, Chirp.
+  The plot runs past [0, 1] to show k-NN cannot extrapolate.
+
+Controls: k (1 to n), samples, noise, resample, and a toggle for the
+testing samples (fresh draws from the same distribution). The side chart
+plots training and testing error against k (log scale) and marks the k
+with the lowest testing error; click or drag it to set k. Arrow keys step
+k. "Try this" prompts for each tab sit above the demo.
+
+Plain HTML/CSS/JS with SVG: no build step and no dependencies.
+
+## Run locally
+
+Open `index.html` in a browser, or serve it:
+
+```sh
+python3 -m http.server 8000   # then visit http://localhost:8000
+```
+
+Link straight to a tab with `index.html#classification` or
+`index.html#regression`.
+
+## Publish on GitHub Pages
+
+Pages is built by `.github/workflows/pages.yml` on every push to `main`. It
+stamps `js/version.js` with the commit and build time, which the footer
+shows ("local copy" when run locally). One-time setup:
+
+```sh
+gh repo create matthigger/knn --public --source . --push
+gh api -X POST repos/matthigger/knn/pages -f build_type=workflow
+```
+
+The site then lives at <https://matthigger.github.io/knn/>.
+
+## Layout
+
+| file | role |
+|------|------|
+| `index.html` | page, explanation text, controls |
+| `style.css` | layout, class palette, plot styles |
+| `js/data.js` | seeded data sets (classification and regression) |
+| `js/knn.js` | distances, vote, average, error at every k, region grid |
+| `js/app.js` | state, drawing, dragging, controls, footer build stamp |
+| `js/version.js` | build stamp, overwritten at deploy |
+| `.github/workflows/pages.yml` | Pages deploy |
