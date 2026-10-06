@@ -19,9 +19,9 @@ toggles, both off by default. Show query adds a draggable query point with
 its neighbors and a readout. Cross validate holds out a share of the samples
 (Test slider, 20% by default; per class for classification) as hollow test
 samples, and shows the training and testing error plus a chart of both
-against k (log scale) that marks the k with the lowest testing error; click
-or drag the chart to set k. Arrow keys step k. "Try this" prompts for each
-tab sit above the demo.
+against k (log scale) that marks the largest k with the lowest testing
+error; click or drag the chart to set k. Arrow keys step k. "Try this"
+prompts for each tab sit above the demo.
 
 Plain HTML/CSS/JS with SVG: no build step and no dependencies.
 

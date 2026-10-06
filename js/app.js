@@ -154,10 +154,10 @@ function refit() {
     ? errorByK(test.X, test.y, train.X, train.y, C, m) : null;
 }
 
-/** Smallest k with the lowest testing error. */
+/** Largest k with the lowest testing error: the smoothest of the best. */
 function bestK() {
   let b = 1;
-  for (let k = 2; k < errTest.length; k++) if (errTest[k] < errTest[b]) b = k;
+  for (let k = 2; k < errTest.length; k++) if (errTest[k] <= errTest[b]) b = k;
   return b;
 }
 
