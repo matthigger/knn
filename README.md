@@ -2,8 +2,8 @@
 
 Interactive teaching demo of k nearest neighbors, in the style of the
 [CS231n k-NN demo](http://vision.stanford.edu/teaching/cs231n-demos/knn/).
-Drag the query point to see its k neighbors and their vote; drag a training
-sample to move it and watch the estimate update. Two tabs:
+Drag a training sample to move it and watch the estimate update; turn on
+the query point to see its k neighbors and their vote. Two tabs:
 
 - **Classification.** Points in the plane, shaded by the k-NN estimate
   everywhere. Data sets: Blobs, Overlap,
@@ -14,8 +14,9 @@ sample to move it and watch the estimate update. Two tabs:
   nearest labels) over the true f(x). Data sets: Sine, Step, Linear, Chirp.
   The plot runs past [0, 1] to show k-NN cannot extrapolate.
 
-Controls: k (1 to n), samples, noise, resample, and a Validate toggle
-(off by default). Validating holds out test samples, fresh draws from the
+Controls: k (1 to n), samples, noise, resample, and two toggles, both off
+by default. Show query adds a draggable query point with its neighbors and
+a readout. Cross validate holds out test samples, fresh draws from the
 same distribution drawn hollow, and shows the training and testing error
 plus a chart of both against k (log scale) that marks the k with the
 lowest testing error; click or drag the chart to set k. Arrow keys step

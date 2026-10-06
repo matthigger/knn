@@ -66,9 +66,9 @@
         <li data-show="class">On <em>Overlap</em>, set
           <i>k</i>&nbsp;=&nbsp;1. The regions break into islands around
           single samples. Raise <i>k</i>: the boundary smooths out. With
-          <em>Validate</em> on, the testing error drops while the training
+          <em>Cross validate</em> on, the testing error drops while the training
           error rises.</li>
-        <li data-show="class">Turn on <em>Validate</em>. At
+        <li data-show="class">Turn on <em>Cross validate</em>. At
           <i>k</i>&nbsp;=&nbsp;1 the training error is always 0%. Why? Is that a good sign?
           <details class="answer"><summary>Answer</summary>Each training
             sample is its own nearest neighbor (distance 0), so it votes for
@@ -97,12 +97,13 @@
             classes, an even <i>k</i> adds little over <i>k</i>&minus;1;
             odd <i>k</i> cannot tie.</details>
         </li>
-        <li data-show="class">Switch the distance to L1 and drag the query:
-          the neighborhood becomes a diamond.</li>
+        <li data-show="class">Turn on <em>Show query</em>, switch the
+          distance to L1 and drag the query: the neighborhood becomes a
+          diamond.</li>
         <li data-show="reg">On <em>Sine</em>, set
           <i>k</i>&nbsp;=&nbsp;1: the curve jumps to each sample's label
           (training MSE 0). Raise <i>k</i> and it smooths; much larger and
-          it flattens out the hills. Turn on <em>Validate</em>: which
+          it flattens out the hills. Turn on <em>Cross validate</em>: which
           <i>k</i> has the lowest testing MSE?</li>
         <li data-show="reg">Set <i>k</i> to the number of samples. What is
           <i>&ycirc;</i>(<i>x</i>)?
@@ -129,8 +130,9 @@
     <div class="stage card">
       <div class="stage-head" id="legend"></div>
       <svg id="stage" aria-label="k nearest neighbors plot"></svg>
-      <p class="hint">Drag a training sample to move it. Click or drag
-        anywhere else to move the query.</p>
+      <p class="hint">Drag a training sample to move it.<span
+        id="query-hint"> Click or drag anywhere else to move the
+        query.</span></p>
     </div>
 
     <aside class="side">
@@ -152,8 +154,10 @@
             <button data-metric="l1" role="radio">L1</button>
           </div></div>
         <label class="check" title="Hold out fresh samples to measure
-          error"><input type="checkbox" id="validate"> Validate on test
-          samples</label>
+          error"><input type="checkbox" id="validate"> Cross validate</label>
+        <label class="check" title="A point to estimate, with its k
+          neighbors"><input type="checkbox" id="showquery"> Show
+          query</label>
         <div class="buttons">
           <button id="resample" title="Draw new samples">&#8635;
             Resample</button>

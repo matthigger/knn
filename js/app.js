@@ -3,6 +3,7 @@
 // k-NN curve (regression), plus the query and its k neighbors. The chart
 // SVG in the side panel plots training and testing error against k; it,
 // the testing samples and the error readout show only while validating.
+// The query, its neighbors and its readout show only while toggled on.
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const COLORS = ["#2563eb", "#ea580c", "#9333ea"];
@@ -29,6 +30,7 @@ const CH = { x0: 46, x1: 330, y0: 10, y1: 140 };
 const state = {
   mode: "class",
   validate: false,
+  query: false,
   class: { set: "swiss", n: 60, noise: 0.3, k: 5, metric: "l2", seed: 1,
     q: [0.3, 0.35] },
   reg: { set: "sine", n: 40, noise: 0.3, k: 5, metric: "l2", seed: 1,
@@ -163,8 +165,11 @@ function draw() {
   updateLegend();
   drawSamples();
   drawQuery();
-  updateReadout();
-  if (state.validate) drawChart();
+  if (state.query) updateReadout();
+  if (state.validate) {
+    drawChart();
+    updateErrors();
+  }
   updateControls();
 }
 
@@ -261,7 +266,9 @@ function updateLegend() {
   if (state.validate) {
     h += `<span class="key"><span class="dot ring"></span>test sample</span>`;
   }
-  h += `<span class="key"><span class="dot qkey"></span>query</span>`;
+  if (state.query) {
+    h += `<span class="key"><span class="dot qkey"></span>query</span>`;
+  }
   document.getElementById("legend").innerHTML = h;
 }
 
@@ -310,6 +317,10 @@ function drawSamples() {
 }
 
 function drawQuery() {
+  if (!state.query) {
+    els.nbhd.innerHTML = els.query.innerHTML = "";
+    return;
+  }
   const s = cur(), q = s.q, k = s.k;
   const { order, d } = neighborOrder(q, train.X, s.metric);
   const nb = order.slice(0, k), r = d[order[k - 1]];
@@ -417,7 +428,7 @@ function niceCeil(v) {
 // --------------------------------------------------------------- readout
 
 function updateReadout() {
-  const s = cur(), k = s.k, n = train.y.length, nt = test.y.length;
+  const s = cur(), k = s.k;
   const isClass = state.mode === "class";
   let h = `<h3>Query</h3>`;
   if (isClass) {
@@ -451,11 +462,15 @@ function updateReadout() {
   }
   const what = isClass ? "error" : "MSE";
   if (!state.validate) {
-    h += `<p class="muted">Check <b>Validate on test samples</b> to measure
-      the training and testing ${what}.</p>`;
+    h += `<p class="muted">Check <b>Cross validate</b> to measure the
+      training and testing ${what}.</p>`;
   }
   document.getElementById("readout").innerHTML = h;
-  if (!state.validate) return;
+}
+
+function updateErrors() {
+  const k = cur().k, n = train.y.length, nt = test.y.length;
+  const what = state.mode === "class" ? "error" : "MSE";
   document.getElementById("errs").innerHTML = `<h3>At <i>k</i> = ${k}</h3>
     <div class="row"><span>Training ${what} (${n} samples)</span>
       <span class="val">${fmtErr(errTrain[k])}</span></div>
@@ -483,6 +498,9 @@ function updateControls() {
   document.getElementById("noiseval").textContent = s.noise.toFixed(2);
   document.getElementById("validate").checked = state.validate;
   document.getElementById("chart-card").hidden = !state.validate;
+  document.getElementById("showquery").checked = state.query;
+  document.getElementById("readout").hidden = !state.query;
+  document.getElementById("query-hint").hidden = !state.query;
   for (const b of document.querySelectorAll("[data-set]")) {
     b.setAttribute("aria-checked", b.dataset.set === s.set);
   }
@@ -524,6 +542,10 @@ for (const b of document.querySelectorAll("[data-metric]")) {
 }
 document.getElementById("validate").onchange = e => {
   state.validate = e.target.checked;
+  invalidate();
+};
+document.getElementById("showquery").onchange = e => {
+  state.query = e.target.checked;
   invalidate();
 };
 document.getElementById("resample").onclick = () => {
@@ -568,6 +590,7 @@ function dragTo(e) {
 svg.addEventListener("pointerdown", e => {
   if (e.button !== 0) return;
   const t = e.target.closest(".s");
+  if (!t && !state.query) return;
   drag = t ? { i: +t.dataset.i } : { query: true };
   svg.setPointerCapture(e.pointerId);
   e.preventDefault();
