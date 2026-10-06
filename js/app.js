@@ -506,14 +506,20 @@ function updateErrors() {
 // -------------------------------------------------------------- controls
 
 const kInput = document.getElementById("k");
+// The k slider runs 0..K_RES on a log scale: position t is k = n^(t/K_RES).
+const K_RES = 1000;
+
+function sliderK() {
+  return Math.round(train.y.length ** (+kInput.value / K_RES));
+}
 const nInput = document.getElementById("n");
 const noiseInput = document.getElementById("noise");
 const splitInput = document.getElementById("split");
 
 function updateControls() {
   const s = cur(), n = train.y.length, C = numClasses();
-  kInput.max = n;
-  kInput.value = s.k;
+  kInput.max = K_RES;
+  kInput.value = Math.round(K_RES * Math.log(s.k) / Math.log(n));
   document.getElementById("kval").innerHTML = s.k === n
     ? `<i>k</i> = ${n} (every sample)` : `<i>k</i> = ${s.k}`;
   [nInput.min, nInput.max] = N_RANGE[state.mode];
@@ -561,8 +567,8 @@ function setK(k, fast) {
 }
 
 // Sliders redraw coarsely while moving and in full once released.
-kInput.oninput = () => setK(+kInput.value, true);
-kInput.onchange = () => setK(+kInput.value, false);
+kInput.oninput = () => setK(sliderK(), true);
+kInput.onchange = () => setK(sliderK(), false);
 nInput.oninput = () => { cur().n = +nInput.value; regen(); };
 noiseInput.oninput = () => { cur().noise = +noiseInput.value; regen(); };
 for (const b of document.querySelectorAll("[data-metric]")) {

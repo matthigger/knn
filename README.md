@@ -14,14 +14,14 @@ the query point to see its k neighbors and their vote. Two tabs:
   nearest labels) over the true f(x). Data sets: Sine, Step, Linear, Chirp.
   The plot runs past [0, 1] to show k-NN cannot extrapolate.
 
-Controls: k (1 to n), samples, noise, resample, and two toggles, both off by
-default. Show query adds a draggable query point with its neighbors and a
-readout. Cross validate holds out a share of the samples (Test slider, 20%
-by default; per class for classification) as hollow test samples, and shows
-the training and testing error plus a chart of both against k (log scale)
-that marks the k with the lowest testing error; click or drag the chart to
-set k. Arrow keys step k. "Try this" prompts for each tab sit above the
-demo.
+Controls: k (1 to n, log-scale slider), samples, noise, resample, and two
+toggles, both off by default. Show query adds a draggable query point with
+its neighbors and a readout. Cross validate holds out a share of the samples
+(Test slider, 20% by default; per class for classification) as hollow test
+samples, and shows the training and testing error plus a chart of both
+against k (log scale) that marks the k with the lowest testing error; click
+or drag the chart to set k. Arrow keys step k. "Try this" prompts for each
+tab sit above the demo.
 
 Plain HTML/CSS/JS with SVG: no build step and no dependencies.
 
