@@ -227,6 +227,7 @@ main { padding-top: 14px; padding-bottom: 24px; }
   margin-right: 4px;
   vertical-align: -1px;
 }
+.dot.fill { background: #8a93a3; }
 .dot.ring { border: 1.8px solid #8a93a3; background: #fff; }
 .dot.qkey {
   width: 15px;

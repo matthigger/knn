@@ -1,7 +1,8 @@
 // Page state, drawing and controls. The stage is one SVG: the feature plane
 // with shaded decision regions (classification) or the x-y scatter with the
 // k-NN curve (regression), plus the query and its k neighbors. The chart
-// SVG in the side panel plots training and testing error against k.
+// SVG in the side panel plots training and testing error against k; it,
+// the testing samples and the error readout show only while validating.
 
 const SVGNS = "http://www.w3.org/2000/svg";
 const COLORS = ["#2563eb", "#ea580c", "#9333ea"];
@@ -27,7 +28,7 @@ const CH = { x0: 46, x1: 330, y0: 10, y1: 140 };
 // Each tab keeps its own settings.
 const state = {
   mode: "class",
-  showTest: false,
+  validate: false,
   class: { set: "swiss", n: 60, noise: 0.3, k: 5, metric: "l2", seed: 1,
     q: [0.3, 0.35] },
   reg: { set: "sine", n: 40, noise: 0.3, k: 5, metric: "l2", seed: 1,
@@ -163,7 +164,7 @@ function draw() {
   drawSamples();
   drawQuery();
   updateReadout();
-  drawChart();
+  if (state.validate) drawChart();
   updateControls();
 }
 
@@ -248,14 +249,17 @@ function updateLegend() {
       h += `<span class="key">${dot(c)}<span><i>y</i> = ${c}</span></span>`;
     }
   } else {
-    h += `<span class="key">${dot(0)}training</span>
-      <span class="key"><span class="line-key"></span><span>k-NN
+    h += `<span class="key"><span class="line-key"></span><span>k-NN
         <i>&ycirc;</i>(<i>x</i>)</span></span>
       <span class="key"><span class="line-key dash"></span><span>true
         <i>f</i>(<i>x</i>)</span></span>`;
   }
-  if (state.showTest) {
-    h += `<span class="key"><span class="dot ring"></span>testing</span>`;
+  // Classification points take their class color, so the key is neutral.
+  const fill = state.mode === "class" ? `<span class="dot fill"></span>`
+    : dot(0);
+  h += `<span class="key">${fill}training sample</span>`;
+  if (state.validate) {
+    h += `<span class="key"><span class="dot ring"></span>test sample</span>`;
   }
   h += `<span class="key"><span class="dot qkey"></span>query</span>`;
   document.getElementById("legend").innerHTML = h;
@@ -299,7 +303,7 @@ function drawSamples() {
     data-i="${i}" cx="${sx(x[0]).toFixed(1)}"
     cy="${sy(isClass ? x[1] : train.y[i]).toFixed(1)}" r="5.5"
     fill="${col(i)}"/>`).join("");
-  els.test.innerHTML = !state.showTest ? "" : test.X.map((x, i) => `<circle
+  els.test.innerHTML = !state.validate ? "" : test.X.map((x, i) => `<circle
     class="t" cx="${sx(x[0]).toFixed(1)}"
     cy="${sy(isClass ? x[1] : test.y[i]).toFixed(1)}" r="3.6"
     stroke="${isClass ? COLORS[test.y[i]] : "#8a93a3"}"/>`).join("");
@@ -446,6 +450,12 @@ function updateReadout() {
         class="val">${fmt(f(s.q[0]))}</span></div>`;
   }
   const what = isClass ? "error" : "MSE";
+  if (!state.validate) {
+    h += `<p class="muted">Check <b>Validate on test samples</b> to measure
+      the training and testing ${what}.</p>`;
+    document.getElementById("readout").innerHTML = h;
+    return;
+  }
   h += `<h3>At <i>k</i> = ${k}</h3>
     <div class="row"><span>Training ${what} (${n} samples)</span>
       <span class="val">${fmtErr(errTrain[k])}</span></div>
@@ -472,7 +482,8 @@ function updateControls() {
     ? `${s.n} per class (${n} in all)` : `${n}`;
   noiseInput.value = s.noise;
   document.getElementById("noiseval").textContent = s.noise.toFixed(2);
-  document.getElementById("showtest").checked = state.showTest;
+  document.getElementById("validate").checked = state.validate;
+  document.getElementById("chart-card").hidden = !state.validate;
   for (const b of document.querySelectorAll("[data-set]")) {
     b.setAttribute("aria-checked", b.dataset.set === s.set);
   }
@@ -512,8 +523,8 @@ for (const b of document.querySelectorAll("[data-metric]")) {
     invalidate({ fit: true });
   };
 }
-document.getElementById("showtest").onchange = e => {
-  state.showTest = e.target.checked;
+document.getElementById("validate").onchange = e => {
+  state.validate = e.target.checked;
   invalidate();
 };
 document.getElementById("resample").onclick = () => {

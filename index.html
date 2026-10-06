@@ -65,10 +65,11 @@
       <ul class="try">
         <li data-show="class">On <em>Overlap</em>, set
           <i>k</i>&nbsp;=&nbsp;1. The regions break into islands around
-          single samples. Raise <i>k</i>: the boundary smooths out and the
-          testing error drops, while the training error rises.</li>
-        <li data-show="class">At <i>k</i>&nbsp;=&nbsp;1 the training error is
-          always 0%. Why? Is that a good sign?
+          single samples. Raise <i>k</i>: the boundary smooths out. With
+          <em>Validate</em> on, the testing error drops while the training
+          error rises.</li>
+        <li data-show="class">Turn on <em>Validate</em>. At
+          <i>k</i>&nbsp;=&nbsp;1 the training error is always 0%. Why? Is that a good sign?
           <details class="answer"><summary>Answer</summary>Each training
             sample is its own nearest neighbor (distance 0), so it votes for
             its own label. A 0% training error says nothing about new
@@ -101,8 +102,8 @@
         <li data-show="reg">On <em>Sine</em>, set
           <i>k</i>&nbsp;=&nbsp;1: the curve jumps to each sample's label
           (training MSE 0). Raise <i>k</i> and it smooths; much larger and
-          it flattens out the hills. Which <i>k</i> has the lowest testing
-          MSE?</li>
+          it flattens out the hills. Turn on <em>Validate</em>: which
+          <i>k</i> has the lowest testing MSE?</li>
         <li data-show="reg">Set <i>k</i> to the number of samples. What is
           <i>&ycirc;</i>(<i>x</i>)?
           <details class="answer"><summary>Answer</summary>Every sample is a
@@ -150,8 +151,9 @@
             <button data-metric="l2" role="radio">L2</button>
             <button data-metric="l1" role="radio">L1</button>
           </div></div>
-        <label class="check"><input type="checkbox" id="showtest"> Show
-          testing samples</label>
+        <label class="check" title="Hold out fresh samples to measure
+          error"><input type="checkbox" id="validate"> Validate on test
+          samples</label>
         <div class="buttons">
           <button id="resample" title="Draw new samples">&#8635;
             Resample</button>
@@ -161,7 +163,7 @@
 
       <div class="card readout" id="readout"></div>
 
-      <div class="card">
+      <div class="card" id="chart-card">
         <h3 id="chart-title"></h3>
         <svg id="chart" viewBox="0 0 340 176"
           aria-label="error against k"></svg>

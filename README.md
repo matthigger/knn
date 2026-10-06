@@ -14,10 +14,11 @@ sample to move it and watch the estimate update. Two tabs:
   nearest labels) over the true f(x). Data sets: Sine, Step, Linear, Chirp.
   The plot runs past [0, 1] to show k-NN cannot extrapolate.
 
-Controls: k (1 to n), samples, noise, resample, and a toggle for the
-testing samples (fresh draws from the same distribution). The side chart
-plots training and testing error against k (log scale) and marks the k
-with the lowest testing error; click or drag it to set k. Arrow keys step
+Controls: k (1 to n), samples, noise, resample, and a Validate toggle
+(off by default). Validating holds out test samples, fresh draws from the
+same distribution drawn hollow, and shows the training and testing error
+plus a chart of both against k (log scale) that marks the k with the
+lowest testing error; click or drag the chart to set k. Arrow keys step
 k. "Try this" prompts for each tab sit above the demo.
 
 Plain HTML/CSS/JS with SVG: no build step and no dependencies.
