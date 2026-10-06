@@ -2,7 +2,7 @@
 // with shaded decision regions (classification) or the x-y scatter with the
 // k-NN curve (regression), plus the query and its k neighbors. The chart
 // SVG in the side panel plots training and testing error against k; it,
-// the testing samples and the error readout show only while validating.
+// the test samples and the error readout show only while validating.
 // The query, its neighbors and its readout show only while toggled on.
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -10,8 +10,6 @@ const COLORS = ["#2563eb", "#ea580c", "#9333ea"];
 // Region shade per class (RGB).
 const PALE = [[191, 219, 254], [254, 215, 170], [233, 213, 255]];
 const CURVE = "#ea580c";
-// Testing samples: per class (classification) or in all (regression).
-const N_TEST = { class: 150, reg: 300 };
 const N_RANGE = { class: [5, 150], reg: [5, 200] };
 // Region grid cells per side, and the coarser grid used mid-drag.
 const GRID = 150;
@@ -30,14 +28,18 @@ const CH = { x0: 46, x1: 330, y0: 10, y1: 140 };
 const state = {
   mode: "class",
   validate: false,
+  // Share of the samples held out for testing while validating.
+  split: 0.2,
   query: false,
   class: { set: "swiss", n: 60, noise: 0.3, k: 5, metric: "l2", seed: 1,
     q: [0.3, 0.35] },
   reg: { set: "sine", n: 40, noise: 0.3, k: 5, metric: "l2", seed: 1,
     q: [0.4] },
 };
-// Derived by regen() and refit(): the samples, and err[k] for k = 1..n.
-let train, test, errTrain, errTest;
+// Derived by regen(), split() and refit(): every sample (pool), the order
+// in which samples are held out, the two parts of the pool (idx gives each
+// sample's pool index), and err[k] for k = 1..n.
+let pool, holdout, train, test, errTrain, errTest;
 // The query's neighbors and estimate, from drawQuery().
 let qres;
 
@@ -99,7 +101,7 @@ function fmtErr(v) {
 
 /** Chart tick label: the nice value exactly. */
 function fmtTick(v) {
-  if (state.mode !== "class") return fmtErr(v);
+  if (state.mode !== "class") return `${+v.toFixed(3)}`;
   return `${+(100 * v).toFixed(1)}%`;
 }
 
@@ -111,22 +113,45 @@ function dot(c) {
 
 /** Draw fresh samples from the current settings (drags are lost). */
 function regen() {
-  const s = cur();
-  if (state.mode === "class") {
-    train = makeClass(s.set, s.n, s.noise, s.seed);
-    test = makeClass(s.set, N_TEST.class, s.noise, s.seed + 100003);
-  } else {
-    train = makeReg(s.set, s.n, s.noise, s.seed);
-    test = makeReg(s.set, N_TEST.reg, s.noise, s.seed + 100003);
-  }
-  s.k = Math.min(s.k, train.y.length);
+  const s = cur(), r = rng(s.seed + 7919);
+  pool = state.mode === "class"
+    ? makeClass(s.set, s.n, s.noise, s.seed)
+    : makeReg(s.set, s.n, s.noise, s.seed);
+  // Per class for classification, so the test set keeps the class balance.
+  const groups = state.mode === "class"
+    ? [...Array(numClasses()).keys()].map(c => pool.y
+      .map((yc, j) => (yc === c ? j : -1)).filter(j => j >= 0))
+    : [pool.y.map((_, j) => j)];
+  holdout = groups.map(g => shuffled(g, r));
+  split();
+}
+
+/** Number held out of a group of m samples (at least 1 kept on each side). */
+function nHeld(m) { return clamp(Math.round(state.split * m), 1, m - 1); }
+
+/**
+ * Split the pool: while validating, the first nHeld of each holdout group
+ * test and the rest train; otherwise everything trains. A larger share
+ * only adds test samples, so the split changes smoothly.
+ */
+function split() {
+  const held = new Set(state.validate
+    ? holdout.flatMap(g => g.slice(0, nHeld(g.length))) : []);
+  const part = keep => {
+    const idx = pool.y.map((_, j) => j).filter(j => held.has(j) !== keep);
+    return { idx, X: idx.map(j => pool.X[j]), y: idx.map(j => pool.y[j]) };
+  };
+  train = part(true);
+  test = part(false);
+  cur().k = Math.min(cur().k, train.y.length);
   invalidate({ fit: true });
 }
 
 function refit() {
   const C = numClasses(), m = cur().metric;
   errTrain = errorByK(train.X, train.y, train.X, train.y, C, m);
-  errTest = errorByK(test.X, test.y, train.X, train.y, C, m);
+  errTest = test.y.length
+    ? errorByK(test.X, test.y, train.X, train.y, C, m) : null;
 }
 
 /** Smallest k with the lowest testing error. */
@@ -474,7 +499,7 @@ function updateErrors() {
   document.getElementById("errs").innerHTML = `<h3>At <i>k</i> = ${k}</h3>
     <div class="row"><span>Training ${what} (${n} samples)</span>
       <span class="val">${fmtErr(errTrain[k])}</span></div>
-    <div class="row"><span>Testing ${what} (${nt} new samples)</span>
+    <div class="row"><span>Testing ${what} (${nt} held out)</span>
       <span class="val">${fmtErr(errTest[k])}</span></div>`;
 }
 
@@ -483,6 +508,7 @@ function updateErrors() {
 const kInput = document.getElementById("k");
 const nInput = document.getElementById("n");
 const noiseInput = document.getElementById("noise");
+const splitInput = document.getElementById("split");
 
 function updateControls() {
   const s = cur(), n = train.y.length, C = numClasses();
@@ -493,10 +519,15 @@ function updateControls() {
   [nInput.min, nInput.max] = N_RANGE[state.mode];
   nInput.value = s.n;
   document.getElementById("nval").textContent = C
-    ? `${s.n} per class (${n} in all)` : `${n}`;
+    ? `${s.n} per class (${pool.y.length} in all)` : `${pool.y.length}`;
   noiseInput.value = s.noise;
   document.getElementById("noiseval").textContent = s.noise.toFixed(2);
   document.getElementById("validate").checked = state.validate;
+  document.getElementById("split-row").hidden = !state.validate;
+  splitInput.value = state.split;
+  document.getElementById("splitval").textContent =
+    `${Math.round(100 * state.split)}%: ${test.y.length} test, `
+    + `${train.y.length} training`;
   document.getElementById("chart-card").hidden = !state.validate;
   document.getElementById("showquery").checked = state.query;
   document.getElementById("readout").hidden = !state.query;
@@ -542,7 +573,11 @@ for (const b of document.querySelectorAll("[data-metric]")) {
 }
 document.getElementById("validate").onchange = e => {
   state.validate = e.target.checked;
-  invalidate();
+  split();
+};
+splitInput.oninput = () => {
+  state.split = +splitInput.value;
+  split();
 };
 document.getElementById("showquery").onchange = e => {
   state.query = e.target.checked;
@@ -578,12 +613,10 @@ function dragTo(e) {
     invalidate();
     return;
   }
-  if (state.mode === "class") {
-    train.X[drag.i] = [x, y];
-  } else {
-    train.X[drag.i] = [x];
-    train.y[drag.i] = y;
-  }
+  // Edit the pool too, so the drag survives a change of split.
+  const j = train.idx[drag.i];
+  pool.X[j] = train.X[drag.i] = state.mode === "class" ? [x, y] : [x];
+  if (state.mode === "reg") pool.y[j] = train.y[drag.i] = y;
   invalidate({ fit: true, fast: true });
 }
 

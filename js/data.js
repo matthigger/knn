@@ -13,6 +13,16 @@ function rng(seed) {
   };
 }
 
+/** Shuffled copy of a (seeded Fisher-Yates). */
+function shuffled(a, r) {
+  const b = a.slice();
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
 /** Standard normal draw (Box-Muller). */
 function gauss(r) {
   return Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
