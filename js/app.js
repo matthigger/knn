@@ -453,15 +453,14 @@ function updateReadout() {
   if (!state.validate) {
     h += `<p class="muted">Check <b>Validate on test samples</b> to measure
       the training and testing ${what}.</p>`;
-    document.getElementById("readout").innerHTML = h;
-    return;
   }
-  h += `<h3>At <i>k</i> = ${k}</h3>
+  document.getElementById("readout").innerHTML = h;
+  if (!state.validate) return;
+  document.getElementById("errs").innerHTML = `<h3>At <i>k</i> = ${k}</h3>
     <div class="row"><span>Training ${what} (${n} samples)</span>
       <span class="val">${fmtErr(errTrain[k])}</span></div>
     <div class="row"><span>Testing ${what} (${nt} new samples)</span>
       <span class="val">${fmtErr(errTest[k])}</span></div>`;
-  document.getElementById("readout").innerHTML = h;
 }
 
 // -------------------------------------------------------------- controls
